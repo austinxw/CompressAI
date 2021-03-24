@@ -1,3 +1,6 @@
+
+![ID-CompressAI-logo](assets/ID-compressAI-logo-750x140.png)
+
 # CompressAI
 
 CompressAI (_compress-ay_) is a PyTorch library and evaluation platform for
@@ -6,16 +9,20 @@ end-to-end compression research.
 CompressAI currently provides:
 
 * custom operations, layers and models for deep learning based data compression
-* a partial port of the official [TensorFlow compression
-  ](https://github.com/tensorflow/compression) library
+* a partial port of the official [TensorFlow compression](https://github.com/tensorflow/compression) library
 * pre-trained end-to-end compression models for learned image compression
 * evaluation scripts to compare learned models against classical image/video
   compression codecs
 
+![PSNR performances plot on Kodak](assets/kodak-psnr.png)
+
+
+> **Note**: Multi-GPU support is now experimental.
+
 ## Installation
 
-CompressAI only supports python 3.6+ and PyTorch 1.4+. A C++17 compiler, a
-recent version of pip (19.0+), and common python packages (see `setup.py` for
+CompressAI only supports python 3.6+ (currently <3.9 for PyTorch support) and PyTorch 1.4+.
+A C++17 compiler, a recent version of pip (19.0+), and common python packages (see `setup.py` for
 the full list) are also required.
 
 To get started and install CompressAI, run the following commands in a [virtual
@@ -44,6 +51,15 @@ supported.
 * [Training your own model](https://interdigitalinc.github.io/CompressAI/tutorial_train.html)
 * [List of available models (model zoo)](https://interdigitalinc.github.io/CompressAI/zoo.html)
 
+## Tests
+
+Run tests with `pytest`:
+
+```bash
+pytest -sx --cov=compressai --cov-append --cov-report term-missing tests
+```
+
+Slow tests can be skipped with the `-m "not slow"` option.
 
 ## Usage
 
@@ -78,15 +94,14 @@ jupyter notebook examples/
 
 ### Evaluation
 
-To evaluate a pre-trained model on your own dataset, CompressAI provides an
+To evaluate a trained model on your own dataset, CompressAI provides an
 evaluation script:
 
 ```bash
-python3 -m compressai.utils.eval_model MODEL_NAME /path/to/images/folder/
+python3 -m compressai.utils.eval_model checkpoint /path/to/images/folder/ -a $ARCH -p $MODEL_CHECKPOINT...
 ```
 
-To evaluate published classical or machine-learning based image/video
-codec solutions:
+To evaluate traditional image/video codecs:
 
 ```bash
 python3 -m compressai.utils.bench --help
@@ -107,24 +122,20 @@ Before contributing, please read the CONTRIBUTING.md file.
 
 ## Authors
 
-* Jean Bégaint, Fabien Racapé, Simon Feltman and Akshay Pushparaja, from the InterDigital AI Lab.
-* *Contact*: firstname.lastname@interdigital.com
+* Jean Bégaint, Fabien Racapé, Simon Feltman and Akshay Pushparaja, InterDigital AI Lab.
 
 ## Citation
 
-If you use this project, please cite the relevant publications for the
-original models and datasets, and cite this project as:
+If you use this project, please cite the relevant original publications for the
+models and datasets, and cite this project as:
 
 ```
-@misc{CompressAI,
-	title = {{CompressAI}: A PyTorch library and evaluation platform for end-to-end compression research},
-	author = "{Jean Bégaint, Fabien Racapé, Simon Feltman, Akshay Pushparaja}",
-	howpublished = {\url{https://github.com/InterDigitalInc/CompressAI}},
-	url = "https://github.com/InterDigitalInc/CompressAI",
-	year = 2020,
-	note = "[Online; accessed 24-June-2020]"
+@article{begaint2020compressai,
+	title={CompressAI: a PyTorch library and evaluation platform for end-to-end compression research},
+	author={B{\'e}gaint, Jean and Racap{\'e}, Fabien and Feltman, Simon and Pushparaja, Akshay},
+	year={2020},
+	journal={arXiv preprint arXiv:2011.03029},
 }
-
 ```
 
 ## Related links

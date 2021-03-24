@@ -12,75 +12,82 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import torch
 
-import pytest
-
-from compressai.layers import GDN, GDN1, MaskedConv2d
+from compressai.layers import (
+    GDN,
+    GDN1,
+    AttentionBlock,
+    MaskedConv2d,
+    ResidualBlock,
+    ResidualBlockUpsample,
+    ResidualBlockWithStride,
+)
 
 
 class TestMaskedConv2d:
     @staticmethod
     def test_mask_type():
-        MaskedConv2d(1, 3, 3, mask_type='A')
-        MaskedConv2d(1, 3, 3, mask_type='B')
+        MaskedConv2d(1, 3, 3, mask_type="A")
+        MaskedConv2d(1, 3, 3, mask_type="B")
 
         with pytest.raises(ValueError):
-            MaskedConv2d(1, 3, 3, mask_type='C')
+            MaskedConv2d(1, 3, 3, mask_type="C")
 
     @staticmethod
     def test_mask_A():
-        conv = MaskedConv2d(1, 3, 5, mask_type='A')
+        conv = MaskedConv2d(1, 3, 5, mask_type="A")
 
         assert (conv.mask[0] == conv.mask[1]).all()
         assert (conv.mask[0] == conv.mask[2]).all()
 
         _, _, h, w = conv.mask.size()
         a = torch.ones_like(conv.mask)
-        a[:, :, h // 2, w // 2:] = 0
-        a[:, :, h // 2 + 1:] = 0
+        a[:, :, h // 2, w // 2 :] = 0
+        a[:, :, h // 2 + 1 :] = 0
 
         assert (conv.mask == a).all()
 
     @staticmethod
     def test_mask_B():
-        conv = MaskedConv2d(1, 3, 5, mask_type='B')
+        conv = MaskedConv2d(1, 3, 5, mask_type="B")
 
         assert (conv.mask[0] == conv.mask[1]).all()
         assert (conv.mask[0] == conv.mask[2]).all()
 
         _, _, h, w = conv.mask.size()
         b = torch.ones_like(conv.mask)
-        b[:, :, h // 2, w // 2 + 1:] = 0
-        b[:, :, h // 2 + 1:] = 0
+        b[:, :, h // 2, w // 2 + 1 :] = 0
+        b[:, :, h // 2 + 1 :] = 0
 
         assert (conv.mask == b).all()
 
     @staticmethod
     def test_mask_A_1d():
-        conv = MaskedConv2d(1, 3, (1, 5), mask_type='A')
+        conv = MaskedConv2d(1, 3, (1, 5), mask_type="A")
 
         assert (conv.mask[0] == conv.mask[1]).all()
         assert (conv.mask[0] == conv.mask[2]).all()
 
         _, _, h, w = conv.mask.size()
         a = torch.ones_like(conv.mask)
-        a[:, :, h // 2, w // 2:] = 0
-        a[:, :, h // 2 + 1:] = 0
+        a[:, :, h // 2, w // 2 :] = 0
+        a[:, :, h // 2 + 1 :] = 0
 
         assert (conv.mask == a).all()
 
     @staticmethod
     def test_mask_B_1d():
-        conv = MaskedConv2d(3, 1, (5, 1), mask_type='B')
+        conv = MaskedConv2d(3, 1, (5, 1), mask_type="B")
 
         assert (conv.mask[:, 0] == conv.mask[:, 1]).all()
         assert (conv.mask[:, 0] == conv.mask[:, 2]).all()
 
         _, _, h, w = conv.mask.size()
         b = torch.ones_like(conv.mask)
-        b[:, :, h // 2, w // 2 + 1:] = 0
-        b[:, :, h // 2 + 1:] = 0
+        b[:, :, h // 2, w // 2 + 1 :] = 0
+        b[:, :, h // 2 + 1 :] = 0
 
         assert (conv.mask == b).all()
 
@@ -95,15 +102,15 @@ class TestMaskedConv2d:
 
         for cfg in cfgs:
             in_ch, out_ch, k = cfg
-            conv = MaskedConv2d(in_ch, out_ch, k, mask_type='A')
+            conv = MaskedConv2d(in_ch, out_ch, k, mask_type="A")
 
             assert conv.mask[0].sum() != 0
             assert (conv.mask - conv.mask[0]).sum() == 0
 
             _, _, h, w = conv.mask.size()
             a = torch.ones_like(conv.mask)
-            a[:, :, h // 2, w // 2:] = 0
-            a[:, :, h // 2 + 1:] = 0
+            a[:, :, h // 2, w // 2 :] = 0
+            a[:, :, h // 2 + 1 :] = 0
 
             assert (conv.mask == a).all()
 
@@ -119,7 +126,7 @@ class TestGDN:
         assert x.grad is not None
         assert x.grad.shape == x.shape
 
-        y_ref = x / torch.sqrt(1 + .1 * (x**2))
+        y_ref = x / torch.sqrt(1 + 0.1 * (x ** 2))
         assert torch.allclose(y_ref, y)
 
     def test_igdn(self):
@@ -132,7 +139,7 @@ class TestGDN:
         assert x.grad is not None
         assert x.grad.shape == x.shape
 
-        y_ref = x * torch.sqrt(1 + .1 * (x**2))
+        y_ref = x * torch.sqrt(1 + 0.1 * (x ** 2))
         assert torch.allclose(y_ref, y)
 
     def test_gdn1(self):
@@ -145,18 +152,37 @@ class TestGDN:
         assert x.grad is not None
         assert x.grad.shape == x.shape
 
-        y_ref = x / (1 + .1 * torch.abs(x))
+        y_ref = x / (1 + 0.1 * torch.abs(x))
         assert torch.allclose(y_ref, y)
 
-    def test_igdn(self):
-        g = GDN1(32, inverse=True)
-        x = torch.rand(1, 32, 16, 16, requires_grad=True)
-        y = g(x)
-        y.backward(x)
 
-        assert y.shape == x.shape
-        assert x.grad is not None
-        assert x.grad.shape == x.shape
+def test_ResidualBlockWithStride():
+    layer = ResidualBlockWithStride(32, 64, stride=1)
+    layer(torch.rand(1, 32, 4, 4))
 
-        y_ref = x * (1 + .1 * torch.abs(x))
-        assert torch.allclose(y_ref, y)
+    layer = ResidualBlockWithStride(32, 32, stride=1)
+    layer(torch.rand(1, 32, 4, 4))
+
+    layer = ResidualBlockWithStride(32, 32, stride=2)
+    layer(torch.rand(1, 32, 4, 4))
+
+    layer = ResidualBlockWithStride(32, 64, stride=2)
+    layer(torch.rand(1, 32, 4, 4))
+
+
+def test_ResidualBlockUpsample():
+    layer = ResidualBlockUpsample(8, 16)
+    layer(torch.rand(1, 8, 4, 4))
+
+
+def test_ResidualBlock():
+    layer = ResidualBlock(8, 8)
+    layer(torch.rand(1, 8, 4, 4))
+
+    layer = ResidualBlock(8, 16)
+    layer(torch.rand(1, 8, 4, 4))
+
+
+def test_AttentionBlock():
+    layer = AttentionBlock(8)
+    layer(torch.rand(1, 8, 4, 4))

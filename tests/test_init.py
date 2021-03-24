@@ -20,13 +20,13 @@ except ImportError:
 realimport = builtins.__import__
 
 
-def monkeypatched_import(name, *args):
+def monkeypatched_import(name, *args, **kwargs):
     # raise ImportError
-    if name == 'compressai.version':
+    if name == "compressai.version":
         raise ImportError
-    if name == 'range_coder':
+    if name == "range_coder":
         raise ImportError
-    return realimport(name, *args)
+    return realimport(name, *args, **kwargs)
 
 
 builtins.__import__ = monkeypatched_import
@@ -40,4 +40,5 @@ def test_import_errors():
 def test_version():
     builtins.__import__ = realimport
     from compressai.version import __version__
-    assert len(__version__) == 5
+
+    assert 5 <= len(__version__) <= 7

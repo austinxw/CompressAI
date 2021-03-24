@@ -38,21 +38,62 @@ Training
 ~~~~~~~~
 
 Unless specified otherwise, networks were trained for 4-5M steps on *256x256*
-image patches randomly cropped and extracted from the `Vime90K
+image patches randomly extracted and cropped from the `Vimeo90K
 <http://toflow.csail.mit.edu/>`_ dataset [xue2019video]_.
 
-Models are trained with a batch size of 16 or 32, and an initial learning rate
-of 1e-4 for approximately 1-2M steps. The learning rate is then divided by 2
-when the evaluation loss reaches a plateau (we use a patience of 20 epochs).
+Models were trained with a batch size of 16 or 32, and an initial learning rate
+of 1e-4 for approximately 1-2M steps. The learning rate of the main optimizer is
+then divided by 2 when the evaluation loss reaches a plateau (we use a patience
+of 20 epochs). This can be implemented by using PyTorch `ReduceLROnPlateau <https://pytorch.org/docs/stable/optim.html?highlight=reducelronplateau#torch.optim.lr_scheduler.ReduceLROnPlateau>`_ learning rate scheduler.
 
 Training usually take between one or two weeks to reach state-of-the-art
 performances, depending on the model, the number of channels and the GPU
 architecture used.
 
+The following loss functions and lambda values were used for training:
+
+.. csv-table::
+   :header: "Metric", "Loss function"
+   :widths: 10, 50
+
+   MSE, :math:`\mathcal{L} = \lambda * 255^{2} * \mathcal{D} + \mathcal{R}`
+   MS-SSIM, :math:`\mathcal{L} = \lambda * (1 - \mathcal{D}) + \mathcal{R}`
+
+with :math:`\mathcal{D}` and :math:`\mathcal{R}` respectively the mean
+distortion and the mean estimated bit-rate.
+
+
+.. csv-table::
+   :header: "Quality", 1, 2, 3, 4, 5, 6, 7, 8
+   :widths: 10, 5, 5, 5, 5, 5, 5, 5, 5
+
+    MSE, 0.0018, 0.0035, 0.0067, 0.0130, 0.0250, 0.0483, 0.0932, 0.1800
+    MS-SSIM, 2.40, 4.58, 8.73, 16.64, 31.73, 60.50, 115.37, 220.00
+
+.. note:: MS-SSIM optimized networks were fine-tuned from pre-trained MSE
+   networks (with a learning rate of 1e-5 for both optimizers).
+
+.. note:: The number of channels for the convolutionnal layers and the entropy
+   bottleneck depends on the architecture and the quality parameter (~targeted
+   bit-rate). For low bit-rates (<0.5 bpp), the literature usually recommends 192
+   channels for the entropy bottleneck, and 320 channels for higher bitrates.
+   The detailed list of configurations can be found in
+   :obj:`compressai.zoo.image.cfgs`.
+
+.. note:: For the *cheng2020_\** architectures, we trained with the first 6
+   quality parameters.
+
 ....
 
 Models
 ~~~~~~
+
+.. warning:: All the models are currently implemented using floating point
+   operations only. As such operations are not reproducible and
+   encoding/decoding on different devices is not supported. See the following
+   paper, `"Integer Networks for Data Compression with Latent-Variable Models"
+   <https://openreview.net/forum?id=S1zz2i0cY7>`_ by Ballé *et al.*, for
+   solutions to implement cross-platform encoding and decoding.
 
 bmshj2018_factorized
 --------------------
@@ -95,7 +136,7 @@ Original paper: [cheng2020]_
 
 .. autofunction:: cheng2020_attn
 
-.. warning:: Pre-trained weights are not yet available
+.. warning:: Pre-trained weights are not yet available for this architecture.
 
 ....
 
@@ -176,6 +217,9 @@ Original paper: [cheng2020]_
 
 Performances
 ~~~~~~~~~~~~
+
+.. note:: See the `CompressAI paper <https://arxiv.org/abs/2011.03029>`_ on
+   arXiv for more comparisons and evaluations.
 
 all models
 ----------

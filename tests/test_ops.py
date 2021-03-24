@@ -14,7 +14,7 @@
 
 import torch
 
-from compressai.ops import (LowerBound, NonNegativeParametrizer, ste_round)
+from compressai.ops import LowerBound, NonNegativeParametrizer, ste_round
 
 
 class TestSTERound:
@@ -35,9 +35,12 @@ class TestLowerBound:
         x = torch.rand(16)
         bound = torch.rand(1)
         lower_bound = LowerBound(bound)
-
         assert (lower_bound(x) == torch.max(x, bound)).all()
 
+    def test_lower_bound_script(self):
+        x = torch.rand(16)
+        bound = torch.rand(1)
+        lower_bound = LowerBound(bound)
         scripted = torch.jit.script(lower_bound)
         assert (scripted(x) == torch.max(x, bound)).all()
 
@@ -67,9 +70,7 @@ class TestNonNegativeParametrizer:
         x_init = parametrizer.init(x)
 
         assert x_init.shape == x.shape
-        assert torch.allclose(x_init,
-                              torch.sqrt(torch.max(x, x - x)),
-                              atol=2**-18)
+        assert torch.allclose(x_init, torch.sqrt(torch.max(x, x - x)), atol=2 ** -18)
 
     def test_non_negative_min(self):
         for _ in range(10):
